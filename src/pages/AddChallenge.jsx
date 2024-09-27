@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { addChallenge } from '../apis/challenges';
+import { useNavigate } from 'react-router-dom';
+import { useCookies } from 'react-cookie';
 
 
 const AddChallenge = () => {
@@ -8,26 +11,47 @@ const AddChallenge = () => {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [cookie, setCookie] = useCookies('')
+  const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (!cookie.jwt)
+      navigate('/')
+  })
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const challengeData = {
-      title,
-      description,
-      startTime,
-      endTime,
-    };
+    await addChallengeApi()
 
-    // Here you would typically send `challengeData` to your backend API
-    console.log('Challenge Added:', challengeData);
-
-    // Reset form fields after submission
     setTitle('');
     setDescription('');
     setStartTime('');
     setEndTime('');
   };
+
+  const addChallengeApi = async () => {
+    const [result, error] = await addChallenge(cookie.jwt, {
+      title: title,
+      description: description,
+      start_time: startTime,
+      end_time: endTime
+    })
+    handleResponse([result, error])
+  }
+
+  const handleResponse = async ([response, error]) => {
+    if (error) {
+      setErrors({
+        ...errors,
+        api: error
+      })
+    }
+    else {
+      const result = await response.json();
+      navigate('/')
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -45,7 +69,7 @@ const AddChallenge = () => {
           />
         </div>
         <div className="mb-4">
-            <ReactQuill theme='snow' value={description} onChange={setDescription} />
+          <ReactQuill theme='snow' value={description} onChange={setDescription} />
           {/* <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
           <textarea
             id="description"
